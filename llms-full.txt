@@ -28500,7 +28500,7 @@ The connected app has three tabs:
 
 - **Tokens**: balances, shield, confidential transfer, unshield and pending unshield recovery for the selected token. The core of the SDK.
 - **Delegation**: grant, revoke and use decryption delegation for the selected token.
-- **Vaults**: deposit into and withdraw from a confidential ERC-4626 vault with `@zama-fhe/react-sdk/vaults`. The Deposit and Withdraw boxes each hold their form and the positions still in progress, with one view per batch state: cancel, settle a late batch, claim, take a canceled amount back. The joined batches live in localStorage. It implements the [Building a vault UI](../../docs/gitbook/src/guides/vaults/building-a-ui.md) guide. Set each network's vaults in `.env.local` (`NEXT_PUBLIC_<NETWORK>_VAULTS`) to use it; with several, a picker chooses the vault.
+- **Vaults**: deposit into and withdraw from a confidential ERC-4626 vault with `@zama-fhe/react-sdk/vaults`. The top of the tab shows your shares in every vault and every batch still in progress, with one view per batch state: cancel, settle a late batch, claim, take a canceled amount back. The Deposit and Withdraw boxes below hold the chosen vault's forms. The joined batches live in localStorage. It implements the [Building a vault UI](../../docs/gitbook/src/guides/vaults/building-a-ui.md) guide. Set each network's vaults in `.env.local` (`NEXT_PUBLIC_<NETWORK>_VAULTS`) to use it; with several, a picker chooses the vault.
 
 This app replaces the former `example-bnb`, `example-hoodi`, `example-polygon-amoy` and `example-zenith` apps, which were copies of it pinned to one chain each.
 
@@ -28682,8 +28682,8 @@ page.tsx                         — wallet connect, network picker, tabs, token
 └── vaults/                      — the Vaults tab
     ├── VaultsTab.tsx            — the vault picker and the chosen vault's tokens
     ├── PositionsOverview.tsx    — your shares in every vault, their value, a total per token
-    ├── VaultActionCard.tsx      — the Deposit or Withdraw box: balance, decrypt, form, positions
-    └── PositionList.tsx         — one row per joined batch, an exhaustive switch on its state
+    ├── InProgressBatches.tsx    — every joined batch, in every vault: an exhaustive switch on its state
+    └── VaultActionCard.tsx      — the Deposit or Withdraw box: balance, decrypt, form
 ```
 
 ---
@@ -29093,10 +29093,12 @@ Vaults tab shows each of those steps, following the
   explains why it is disabled (a paused batcher from `useOpenBatches`, no amount, above balance),
   and `onJoinSubmitted` tells "confirm in your wallet" from "waiting for the transaction".
 - **Joined batches.** The app needs each batch to read and act on it later, so
-  `src/lib/vaults.ts` keeps them in localStorage, with the bigint batch ids stored as strings. A
-  claim or a quit removes the batch.
+  `src/lib/vaults.ts` keeps them in localStorage, with the bigint batch ids stored as strings, in
+  one store that every view reads (`useSyncExternalStore`): a join in a vault's box shows at
+  once in the In progress card, and a claim or a quit removes the batch.
 - **One row per batch.** `useBatch` reads a batch with the fields its state has and the
-  `actions` it allows now, and `PositionList.tsx` switches on `state` exhaustively: cancel
+  `actions` it allows now, and `InProgressBatches.tsx` lists the batches of every vault and
+  switches on `state` exhaustively: cancel
   while pending, settle a late batch with `useFinalize`, claim a finalized one with `useClaim`,
   take a canceled amount back with `useQuit`.
 
