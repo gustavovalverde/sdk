@@ -146,6 +146,18 @@ Sharing only works if every signer in the scope reads and writes the **same** st
 Use `sdk.permits.warmTransportKeyPairScope(scopeId)`, not `sdk.permits.warmTransportKeyPair()`, to pre-warm a scope. The latter is gated on a connected wallet-account snapshot — a precondition inherited from its per-signer use case that doesn't apply to a scope-wide key, and it would silently no-op precisely when an operator is most likely to call it: before any end-user is connected. `warmTransportKeyPairScope()` needs no wallet account _connected_ — though, like the rest of the `credentials/` facade, it still requires a `signer` to be configured on the `ZamaSDK` instance at construction time — matching `revokeTransportKeyPair()`'s operator-level design.
 {% endhint %}
 
+### Decrypted value cache
+
+The SDK caches the result of every user decryption in the configured `storage`, keyed by signer address, contract address, and encrypted value. With the default browser storage (IndexedDB), cached values survive page reloads and browser restarts.
+
+- **No permit is needed to read a cached value.** A cache hit is returned before the SDK looks for a permit, so it needs no wallet signature and no relayer call. An ACL change on-chain does not remove a value that is already cached.
+- **Cached values are stored in plaintext.** `transportKeyPairDerivationSecret` wraps only the transport private key.
+- **Permit expiry does not clear the cache.** Cached values stay until `sdk.permits.clear()` or `sdk.permits.revokePermits()` runs, or, by default, until the wallet account changes (see [Wallet account changes](./permit-model.md#wallet-account-changes)).
+
+To keep decrypted values for the current session only, pass `memoryStorage` as `storage`. The transport key pair then lives in memory as well, so after a reload the user signs a new permit before the next decryption.
+
+Same-origin scripts can read cached values from IndexedDB as they can read the transport key pair; see [Limitations](#limitations).
+
 ### Limitations
 
 <details>

@@ -341,7 +341,7 @@ For a runnable React dApp using these APIs end-to-end, follow [Build your first 
 
 ## UI and UX recommendations
 
-- **Caching**: Decrypted values are cached client-side for the session lifetime. Offer a refresh action that repeats the decrypt flow.
+- **Caching**: Decrypted values are cached in the SDK's `storage` and, with the default browser storage, survive page reloads. Offer a refresh action that repeats the decrypt flow. See [Decrypted value cache](../concepts/security-model.md#decrypted-value-cache).
 - **Permissions**: Treat user decryption as a permission grant with scope and duration. Show which contracts are included and when access expires. The SDK's permit model is described in [Permit model](../concepts/permit-model.md).
 - **Indicators**: Use distinct icons or badges for encrypted amounts. Avoid showing zero when a value is simply undisclosed.
 - **Operator visibility**: Always show current operator approvals with expiry and a one-tap revoke (call `setOperator` with a past timestamp to revoke). See [`useConfidentialIsOperator`](../reference/react/useConfidentialIsOperator.md) and [`useConfidentialSetOperator`](../reference/react/useConfidentialSetOperator.md).

@@ -1597,7 +1597,7 @@ For a runnable React dApp using these APIs end-to-end, follow [Build your first 
 
 ## UI and UX recommendations
 
-- **Caching**: Decrypted values are cached client-side for the session lifetime. Offer a refresh action that repeats the decrypt flow.
+- **Caching**: Decrypted values are cached in the SDK's `storage` and, with the default browser storage, survive page reloads. Offer a refresh action that repeats the decrypt flow. See [Decrypted value cache](https://raw.githubusercontent.com/zama-ai/sdk/beta/docs/gitbook/src/concepts/security-model.md#decrypted-value-cache).
 - **Permissions**: Treat user decryption as a permission grant with scope and duration. Show which contracts are included and when access expires. The SDK's permit model is described in [Permit model](https://raw.githubusercontent.com/zama-ai/sdk/beta/docs/gitbook/src/concepts/permit-model.md).
 - **Indicators**: Use distinct icons or badges for encrypted amounts. Avoid showing zero when a value is simply undisclosed.
 - **Operator visibility**: Always show current operator approvals with expiry and a one-tap revoke (call `setOperator` with a past timestamp to revoke). See [`useConfidentialIsOperator`](https://raw.githubusercontent.com/zama-ai/sdk/beta/docs/gitbook/src/reference/react/useConfidentialIsOperator.md) and [`useConfidentialSetOperator`](https://raw.githubusercontent.com/zama-ai/sdk/beta/docs/gitbook/src/reference/react/useConfidentialSetOperator.md).
@@ -26560,6 +26560,18 @@ A fresh key pair invalidates every permit granted for the old one, so the signer
 > [!INFO]
 > Use `sdk.permits.warmTransportKeyPairScope(scopeId)`, not `sdk.permits.warmTransportKeyPair()`, to pre-warm a scope. The latter is gated on a connected wallet-account snapshot — a precondition inherited from its per-signer use case that doesn't apply to a scope-wide key, and it would silently no-op precisely when an operator is most likely to call it: before any end-user is connected. `warmTransportKeyPairScope()` needs no wallet account _connected_ — though, like the rest of the `credentials/` facade, it still requires a `signer` to be configured on the `ZamaSDK` instance at construction time — matching `revokeTransportKeyPair()`'s operator-level design.
 
+
+### Decrypted value cache
+
+The SDK caches the result of every user decryption in the configured `storage`, keyed by signer address, contract address, and encrypted value. With the default browser storage (IndexedDB), cached values survive page reloads and browser restarts.
+
+- **No permit is needed to read a cached value.** A cache hit is returned before the SDK looks for a permit, so it needs no wallet signature and no relayer call. An ACL change on-chain does not remove a value that is already cached.
+- **Cached values are stored in plaintext.** `transportKeyPairDerivationSecret` wraps only the transport private key.
+- **Permit expiry does not clear the cache.** Cached values stay until `sdk.permits.clear()` or `sdk.permits.revokePermits()` runs, or, by default, until the wallet account changes (see [Wallet account changes](https://raw.githubusercontent.com/zama-ai/sdk/beta/docs/gitbook/src/concepts/permit-model.md#wallet-account-changes)).
+
+To keep decrypted values for the current session only, pass `memoryStorage` as `storage`. The transport key pair then lives in memory as well, so after a reload the user signs a new permit before the next decryption.
+
+Same-origin scripts can read cached values from IndexedDB as they can read the transport key pair; see [Limitations](#limitations).
 
 ### Limitations
 
